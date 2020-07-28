@@ -6,14 +6,14 @@ cimport libav as lib
 
 from av.codec.codec cimport Codec
 from av.dictionary cimport _Dictionary
-from av.enums cimport define_enum
+from av.enum cimport define_enum
 from av.error cimport err_check
 from av.video.format cimport get_video_format
 
 from av.dictionary import Dictionary
 
 
-HWDeviceType = define_enum('HWDeviceType', (
+HWDeviceType = define_enum('HWDeviceType', __name__, (
     # ('NONE', lib.AV_HWDEVICE_TYPE_NONE),
     ('VDPAU', lib.AV_HWDEVICE_TYPE_VDPAU),
     ('CUDA', lib.AV_HWDEVICE_TYPE_CUDA),
@@ -28,13 +28,13 @@ HWDeviceType = define_enum('HWDeviceType', (
 ))
 
 
-HWConfigMethod = define_enum('HWConfigMethod', (
+HWConfigMethod = define_enum('HWConfigMethod', __name__, (
     ('NONE', 0),
     ('HW_DEVICE_CTX', lib.AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX),  # This is the only one we support.
     ('HW_FRAMES_CTX', lib.AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX),
     ('INTERNAL', lib.AV_CODEC_HW_CONFIG_METHOD_INTERNAL),
     ('AD_HOC', lib.AV_CODEC_HW_CONFIG_METHOD_AD_HOC),
-), is_flags=True, allow_multi_flags=True)
+), is_flags=True)
 
 
 cdef object _cinit_sentinel = object()
