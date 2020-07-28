@@ -1,5 +1,3 @@
-from av.deprecation import renamed_attr
-
 
 cdef class Plane(Buffer):
     """
@@ -13,11 +11,12 @@ cdef class Plane(Buffer):
         self.index = index
 
     def __repr__(self):
-        return '<av.%s at 0x%x>' % (self.__class__.__name__, id(self))
-
-    ptr = renamed_attr('buffer_ptr')
+        return '<av.%s %d bytes; buffer_ptr=0x%x; at 0x%x>' % (
+            self.__class__.__name__,
+            self.buffer_size,
+            self.buffer_ptr,
+            id(self),
+        )
 
     cdef void* _buffer_ptr(self):
         return self.frame.ptr.extended_data[self.index]
-
-    update_from_string = renamed_attr('update')

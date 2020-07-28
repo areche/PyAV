@@ -23,19 +23,20 @@ if [[ ! "$PYAV_LIBRARY" ]]; then
     fi
 fi
 export PYAV_LIBRARY
-_lib_parts=(${PYAV_LIBRARY//-/ })
-if [[ ${#_lib_parts[@]} != 2 ]]; then
-    echo "Malformed \$PYAV_LIBRARY: \"$PYAV_LIBRARY\""
-    exit 1
-fi
-export PYAV_LIBRARY_NAME=${_lib_parts[0]}
-export PYAV_LIBRARY_VERSION=${_lib_parts[1]}
-
 
 if [[ ! "$PYAV_PYTHON" ]]; then
     PYAV_PYTHON="${PYAV_PYTHON-python3}"
     echo 'No $PYAV_PYTHON set; defaulting to python3.'
 fi
+
+# Hack for PyPy on GitHub Actions.
+# This is because PYAV_PYTHON is constructed from "python${{ matrix.config.python }}"
+# resulting in "pythonpypy3", which won't work.
+# It would be nice to clean this up, but I want it to work ASAP.
+if [[ "$PYAV_PYTHON" == *pypy* ]]; then
+    PYAV_PYTHON=python
+fi
+
 export PYAV_PYTHON
 export PYAV_PIP="${PYAV_PIP-$PYAV_PYTHON -m pip}"
 
@@ -52,7 +53,6 @@ if [[ "$GITHUB_ACTION" || "$TRAVIS" ]]; then
 else
 
     export PYAV_VENV_NAME="$(uname -s).$(uname -r).$("$PYAV_PYTHON" -c '
-from __future__ import print_function
 import sys
 import platform
 print("{}{}.{}".format(platform.python_implementation().lower(), *sys.version_info[:2]))

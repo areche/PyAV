@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**IMPORTANT:** Be sure to fill in all applicable sections {{ in braces }} or your issue may be discarded.
+**IMPORTANT:** Be sure to replace all template sections {{ like this }} or your issue may be discarded.
 
 
 ## Overview
@@ -17,7 +17,7 @@ assignees: ''
 
 ## Existing FFmpeg API
 
-{{ Link to appropriate FFmpeg documentation, ideally the API doxygen files }}
+{{ Link to appropriate FFmpeg documentation, ideally the API doxygen files at https://ffmpeg.org/doxygen/trunk/ }}
 
 
 ## Expected PyAV API

@@ -12,7 +12,9 @@
 /venvs
 
 # Build products
+*.dll
 *.egg-info
+*.lib
 *.pyc
 *.so
 /*.sdf
@@ -25,8 +27,6 @@
 /build
 /dist
 /docs/_build
-/docs/error_table.rst
-/docs/includes.rst
 /ipch
 /msvc-projects
 /src

@@ -50,7 +50,19 @@ cdef Stream wrap_stream(Container container, lib.AVStream *c_stream):
 
 cdef class Stream(object):
     """
-    A single stream of audio, video or subtitles within a :class:`Container`.
+    A single stream of audio, video or subtitles within a :class:`.Container`.
+
+    ::
+
+        >>> fh = av.open(video_path)
+        >>> stream = fh.streams.video[0]
+        >>> stream
+        <av.VideoStream #0 h264, yuv420p 1280x720 at 0x...>
+
+    This encapsulates a :class:`.CodecContext`, located at :attr:`Stream.codec_context`.
+    Attribute access is passed through to that context when attributes are missing
+    on the stream itself. E.g. ``stream.options`` will be the options on the
+    context.
     """
 
     def __cinit__(self, name):
@@ -114,19 +126,28 @@ cdef class Stream(object):
         setattr(self.codec_context, name, value)
 
     cdef _finalize_for_output(self):
+
         dict_to_avdict(
             &self._stream.metadata, self.metadata,
-            clear=True,
             encoding=self.container.metadata_encoding,
             errors=self.container.metadata_errors,
         )
+
         if not self._stream.time_base.num:
             self._stream.time_base = self._codec_context.time_base
+
+        # It prefers if we pass it parameters via this other object.
+        # Lets just copy what we want.
+        err_check(lib.avcodec_parameters_from_context(self._stream.codecpar, self._stream.codec))
 
     def encode(self, frame=None):
         """
         Encode an :class:`.AudioFrame` or :class:`.VideoFrame` and return a list
         of :class:`.Packet`.
+
+        :return: :class:`list` of :class:`.Packet`.
+
+        .. seealso:: This is mostly a passthrough to :meth:`.CodecContext.encode`.
         """
         packets = self.codec_context.encode(frame)
         cdef Packet packet
@@ -139,11 +160,15 @@ cdef class Stream(object):
         """
         Decode a :class:`.Packet` and return a list of :class:`.AudioFrame`
         or :class:`.VideoFrame`.
+
+        :return: :class:`list` of :class:`.Frame` subclasses.
+
+        .. seealso:: This is mostly a passthrough to :meth:`.CodecContext.decode`.
         """
         return self.codec_context.decode(packet)
 
     @deprecation.method
-    def seek(self, offset, whence='time', backward=True, any_frame=False):
+    def seek(self, offset, **kwargs):
         """
         .. seealso:: :meth:`.InputContainer.seek` for documentation on parameters.
             The only difference is that ``offset`` will be interpreted in
@@ -153,13 +178,14 @@ cdef class Stream(object):
             Use :meth:`.InputContainer.seek` with ``stream`` argument instead.
 
         """
-        self.container.seek(offset, whence, backward, any_frame, stream=self)
+        self.container.seek(offset, stream=self, **kwargs)
 
     property id:
         """
         The format-specific ID of this stream.
 
         :type: int
+
         """
         def __get__(self):
             return self._stream.id
@@ -194,7 +220,8 @@ cdef class Stream(object):
         """
         The unit of time (in fractional seconds) in which timestamps are expressed.
 
-        :type: fractions.Fraction
+        :type: :class:`~fractions.Fraction` or ``None``
+
         """
         def __get__(self):
             return avrational_to_fraction(&self._stream.time_base)
@@ -204,21 +231,52 @@ cdef class Stream(object):
 
     property average_rate:
         """
-        The average frame rate of this stream.
+        The average frame rate of this video stream.
 
-        :type: fractions.Fraction
+        This is calculated when the file is opened by looking at the first
+        few frames and averaging their rate.
+
+        :type: :class:`~fractions.Fraction` or ``None``
+
+
         """
         def __get__(self):
             return avrational_to_fraction(&self._stream.avg_frame_rate)
+
+    property base_rate:
+        """
+        The base frame rate of this stream.
+
+        This is calculated as the lowest framerate at which the timestamps of
+        frames can be represented accurately. See :ffmpeg:`AVStream.r_frame_rate`
+        for more.
+
+        :type: :class:`~fractions.Fraction` or ``None``
+
+        """
+        def __get__(self):
+            return avrational_to_fraction(&self._stream.r_frame_rate)
+
+    property guessed_rate:
+        """The guessed frame rate of this stream.
+
+        This is a wrapper around :ffmpeg:`av_guess_frame_rate`, and uses multiple
+        huristics to decide what is "the" frame rate.
+
+        :type: :class:`~fractions.Fraction` or ``None``
+
+        """
+        def __get__(self):
+            # The two NULL arguments aren't used in FFmpeg >= 4.0
+            cdef lib.AVRational val = lib.av_guess_frame_rate(NULL, self._stream, NULL)
+            return avrational_to_fraction(&val)
 
     property start_time:
         """
         The presentation timestamp in :attr:`time_base` units of the first
         frame in this stream.
 
-        Returns `None` if it is not known.
-
-        :type: int
+        :type: :class:`int` or ``None``
         """
         def __get__(self):
             if self._stream.start_time != lib.AV_NOPTS_VALUE:
@@ -228,9 +286,8 @@ cdef class Stream(object):
         """
         The duration of this stream in :attr:`time_base` units.
 
-        Returns `None` if it is not known.
+        :type: :class:`int` or ``None``
 
-        :type: int
         """
         def __get__(self):
             if self._stream.duration != lib.AV_NOPTS_VALUE:
@@ -240,7 +297,7 @@ cdef class Stream(object):
         """
         The number of frames this stream contains.
 
-        Returns `0` if it is not known.
+        Returns ``0`` if it is not known.
 
         :type: int
         """
@@ -250,9 +307,7 @@ cdef class Stream(object):
         """
         The language of the stream.
 
-        Returns `None` if it is not known.
-
-        :type: str
+        :type: :class:``str`` or ``None``
         """
         def __get__(self):
             return self.metadata.get('language')
@@ -262,7 +317,7 @@ cdef class Stream(object):
         """
         The type of the stream.
 
-        Examples: `'audio'`, `'video'`, `'subtitle'`.
+        Examples: ``'audio'``, ``'video'``, ``'subtitle'``.
 
         :type: str
         """

@@ -80,5 +80,6 @@ Mapping Codes and Classes
 
 Here is how the classes line up with the error codes/enumerations:
 
-.. include:: ../error_table.rst
+.. include:: ../_build/rst/api/error_table.rst
+
 

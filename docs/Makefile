@@ -5,30 +5,36 @@ BUILDDIR      = _build
 
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 
-.PHONY: clean html open upload
-.DEFAULT: html
+.PHONY: clean html open upload default
 
-includes.rst: includes.py $(shell find ../include ../av -name '*.pyx' -or -name '*.pxd')
+default: html
+
+
+TAGFILE := _build/doxygen/tagfile.xml
+$(TAGFILE) :
+	./generate-tagfile -o $(TAGFILE)
+
+
+TEMPLATES := $(wildcard api/*.py development/*.py)
+RENDERED := $(TEMPLATES:%.py=_build/rst/%.rst)
+_build/rst/%.rst: %.py $(TAGFILE) $(shell find ../include ../av -name '*.pyx' -or -name '*.pxd')
+	@ mkdir -p $(@D)
 	python $< > $@.tmp
 	mv $@.tmp $@
 
-error_table.rst: error_table.py ../av/error.pyx
-	python $< > $@.tmp
-	mv $@.tmp $@
 
 clean:
 	- rm -rf $(BUILDDIR)/*
-	- rm includes.rst
 
-html: includes.rst error_table.rst
+html: $(RENDERED) $(TAGFILE)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 
 test:
-	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
+	PYAV_SKIP_DOXYLINK=1 $(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 
 open:
 	open _build/html/index.html
 
 upload:
-	rsync -avxP --delete _build/html/ docs.mikeboers.com:/srv/mikeboers.com/docs/httpdocs/pyav/develop/
+	rsync -avxP --delete _build/html/ pyav.org:/srv/pyav.org/www/httpdocs/docs/develop/
 

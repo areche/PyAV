@@ -1,3 +1,5 @@
+from http.server import BaseHTTPRequestHandler
+from socketserver import TCPServer
 import threading
 import time
 
@@ -6,22 +8,12 @@ import av
 from .common import TestCase, fate_suite
 
 
-try:
-    # Python 3
-    from http.server import BaseHTTPRequestHandler
-    from socketserver import TCPServer
-except ImportError:
-    # Python 2
-    from BaseHTTPServer import BaseHTTPRequestHandler
-    from SocketServer import TCPServer
-
-
 PORT = 8002
 CONTENT = open(fate_suite('mpeg2/mpeg2_field_encoding.ts'), 'rb').read()\
 
 # Needs to be long enough for all host OSes to deal.
 TIMEOUT = 0.25
-DELAY = 2 * TIMEOUT
+DELAY = 4 * TIMEOUT
 
 
 class HttpServer(TCPServer):
