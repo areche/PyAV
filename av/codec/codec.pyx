@@ -212,7 +212,7 @@ cdef class Codec(object):
     def create(self):
         """Create a :class:`.CodecContext` for this codec."""
         from .context import CodecContext
-        return CodecContext.create(self, *args, **kwargs)
+        return CodecContext.create(self)
 
     property is_decoder:
         def __get__(self):
@@ -422,7 +422,7 @@ def dump_codecs():
             ))
         except Exception as e:
             print('...... %-18s ERROR: %s' % (codec.name, e))
- 
+
 
 
 def dump_hwconfigs():
